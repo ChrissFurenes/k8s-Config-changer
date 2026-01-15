@@ -1,9 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
+
 	"strings"
 
 	"github.com/rivo/tview"
@@ -13,8 +15,24 @@ type Item struct {
 	Name string
 }
 
+func UserHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
+func kubepath() string {
+
+	return filepath.Join(UserHomeDir(), ".kube")
+}
+
 var configs = []string{}
-var path = "/mnt/c/Users/chris/.kube"
+var path = kubepath()
 
 func loadConfigs() {
 	entries, err := os.ReadDir(path + "/configs")
@@ -22,13 +40,13 @@ func loadConfigs() {
 		log.Fatal(err)
 	}
 	for _, entry := range entries {
-		fmt.Println(entry.Name())
+		//fmt.Println(entry.Name())
 		configs = append(configs, entry.Name()[strings.Index(entry.Name(), ".")+1:])
 
 	}
 }
 func confirm(name string) {
-	fmt.Println("Navn:" + name)
+	//fmt.Println("Navn:" + name)
 	var source = path + "/configs/config." + name
 	var dest = path + "/config"
 
