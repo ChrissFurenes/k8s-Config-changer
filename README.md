@@ -1,6 +1,7 @@
 # k8s-Config-changer
 
-
+### KKC - k8s Config Changer
+is a tool to fast change k8s config file in the CLI
 
 ![img.png](img.png)
 
