@@ -1,6 +1,6 @@
 # k8s-Config-changer
 
-**KKC – Kubernetes Config Changer**
+**KCC – Kubernetes Config Changer**
 
 A lightweight command-line tool for quickly switching between multiple Kubernetes `kubeconfig` files.
 
@@ -34,15 +34,15 @@ The tool itself has no runtime dependencies.
 ```bash
 git clone https://github.com/ChrissFurenes/k8s-Config-changer.git
 cd k8s-Config-changer
-go build -o kkc main.go
+go build -o kcc main.go
 ```
 Move the binary to a directory in your ```$PATH```:
 ```bash
-sudo mv kkc /usr/local/bin/
+sudo mv kcc /usr/local/bin/
 ```
 Verify installation:
 ```bash
-kkc
+kcc
 ```
 ![img.png](img.png)
 
@@ -61,4 +61,5 @@ Your Kubernetes configuration directory should be structured as follows:
 ````
 
 - ~/.kube/config is the file used by kubectl
+
 - All files inside configs/ must be valid Kubernetes kubeconfig files
