@@ -9,10 +9,20 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
+	"gopkg.in/yaml.v3"
 )
 
 type Item struct {
 	Name string
+}
+
+type information struct {
+	Clusters []struct {
+		Name    string `yaml:"name"`
+		Cluster struct {
+			Server string `yaml:"server"`
+		} `yaml:"cluster"`
+	} `yaml:"clusters"`
 }
 
 func UserHomeDir() string {
@@ -40,8 +50,16 @@ func loadConfigs() {
 		log.Fatal(err)
 	}
 	for _, entry := range entries {
-		//fmt.Println(entry.Name())
-		configs = append(configs, entry.Name()[strings.Index(entry.Name(), ".")+1:])
+		file, err := os.ReadFile(path + "/configs/" + entry.Name())
+		if err != nil {
+			log.Fatal(err)
+		}
+		var config information
+		err = yaml.Unmarshal(file, &config)
+		if err != nil {
+			log.Fatal(err)
+		}
+		configs = append(configs, entry.Name()[strings.Index(entry.Name(), ".")+1:]+" IP: "+config.Clusters[0].Cluster.Server)
 
 	}
 }
@@ -63,10 +81,11 @@ func main() {
 
 	app := tview.NewApplication()
 	loadConfigs()
-
 	configList := tview.NewList()
-
 	configList.SetBorder(true).SetTitle("Configuration")
+
+	infoData := tview.NewTextView()
+	infoData.SetBorder(true).SetTitle("Information")
 
 	refreshConfigs := func() {
 		configList.Clear()
@@ -84,7 +103,8 @@ func main() {
 	}
 
 	flex := tview.NewFlex().
-		AddItem(configList, 0, 1, true)
+		AddItem(configList, 0, 1, true).
+		AddItem(infoData, 0, 1, false)
 
 	refreshConfigs()
 	if err := app.SetRoot(flex, true).Run(); err != nil {
