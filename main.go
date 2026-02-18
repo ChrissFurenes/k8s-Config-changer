@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
+	"strconv"
 	"strings"
 
 	"github.com/rivo/tview"
@@ -13,6 +13,33 @@ import (
 
 type Item struct {
 	Name string
+}
+
+type info struct {
+	Name     string
+	UserName string
+	ip       string
+	ping     bool
+	path     string
+	nodes    int
+	pods     int
+}
+
+type configinformation struct {
+	Clusters []struct {
+		Name    string `yaml:"name"`
+		Cluster struct {
+			Server string `yaml:"server"`
+		} `yaml:"cluster"`
+	} `yaml:"clusters"`
+}
+
+func InfoDataDisplay(data info) string {
+	var information = "Name: " + data.Name +
+		"\n\nUser: " + data.UserName +
+		"\nIP: " + data.ip +
+		"\nPing: " + strconv.FormatBool(data.ping) + "\n"
+	return information
 }
 
 func UserHomeDir() string {
@@ -33,6 +60,7 @@ func kubepath() string {
 
 var configs = []string{}
 var path = kubepath()
+var infos = []info{}
 
 func loadConfigs() {
 	entries, err := os.ReadDir(path + "/configs")
@@ -40,13 +68,14 @@ func loadConfigs() {
 		log.Fatal(err)
 	}
 	for _, entry := range entries {
-		//fmt.Println(entry.Name())
+		currInfo := info{}
+		infos = append(infos, currInfo)
 		configs = append(configs, entry.Name()[strings.Index(entry.Name(), ".")+1:])
 
 	}
 }
 func confirm(name string) {
-	//fmt.Println("Navn:" + name)
+
 	var source = path + "/configs/config." + name
 	var dest = path + "/config"
 
@@ -59,7 +88,6 @@ func confirm(name string) {
 }
 
 func main() {
-	//fmt.Println("Hello World")
 
 	app := tview.NewApplication()
 	loadConfigs()
@@ -83,8 +111,25 @@ func main() {
 
 	}
 
+	infoData := tview.NewTextView()
+
+	var hh info
+	hh.ip = "127.0.0.1"
+	hh.ping = true
+	hh.path = path
+	hh.nodes = runtime.NumCPU()
+	hh.pods = runtime.NumCPU()
+	hh.UserName = "per"
+
+	configList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
+		infoData.SetText(InfoDataDisplay(infos[index]))
+	})
+
+	infoData.SetBorder(true).SetTitle("Info").SetTitleAlign(tview.AlignLeft)
+
 	flex := tview.NewFlex().
-		AddItem(configList, 0, 1, true)
+		AddItem(configList, 0, 1, true).
+		AddItem(infoData, 0, 1, false)
 
 	refreshConfigs()
 	if err := app.SetRoot(flex, true).Run(); err != nil {
