@@ -32,6 +32,12 @@ type configinformation struct {
 			Server string `yaml:"server"`
 		} `yaml:"cluster"`
 	} `yaml:"clusters"`
+	contexts []struct {
+		context []struct {
+			clustername string `yaml:"cluster"`
+			username    string `yaml:"user"`
+		} `yaml:"context"`
+	} `yaml:"contexts"`
 }
 
 func InfoDataDisplay(data info) string {
@@ -88,7 +94,7 @@ func confirm(name string) {
 }
 
 func main() {
-
+	//configinformation{}.contexts[0].context[0].clustername == ""
 	app := tview.NewApplication()
 	loadConfigs()
 
