@@ -19,12 +19,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const (
-	Reset = "\033[0m"
-	Green = "\033[32m"
-	Red   = "\033[31m"
-)
-
 var configs = []string{}
 var path = kubepath()
 var config []ConfigInformation
