@@ -22,7 +22,7 @@ import (
 var configs = []string{}
 var path = kubepath()
 var config []ConfigInformation
-var infos []info
+var infos []Info
 var app = tview.NewApplication()
 var configList = tview.NewList()
 var infoData = tview.NewTextView()
@@ -31,7 +31,7 @@ var flex = tview.NewFlex().
 	AddItem(configList, 0, 1, true).
 	AddItem(infoData, 0, 1, false)
 
-type info struct {
+type Info struct {
 	Active bool
 	Name   string
 	User   string
@@ -62,16 +62,18 @@ type ConfigInformation struct {
 	} `yaml:"contexts"`
 }
 
-func InfoDataDisplay(data info) string {
+func InfoDataDisplay(data Info) string {
 	var statusIcon = "🔴"
+	var color = "[red]"
 	if data.ping {
 		statusIcon = "🟢"
+		color = "[green]"
 	}
 	var information = "Name: " + data.Name +
 		"\n\nUser:.. " + data.User +
 		"\nIP:.... " + data.ip +
 		"\nPort:.. " + data.port +
-		"\nPing:.. " + strings.ToUpper(strconv.FormatBool(data.ping)) + statusIcon +
+		"\nPing:.. " + color + strings.ToUpper(strconv.FormatBool(data.ping)) + "[::-] [white]" + statusIcon +
 		"\nPath... " + data.path[strings.LastIndex(data.path, "/")+1:]
 	if data.ping {
 		information = information + "\nNodes.. " + strconv.Itoa(data.nodes) +
@@ -92,12 +94,18 @@ func Testconnection(ip string, port string) bool {
 	if err != nil {
 		return false
 	}
-	defer conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
 	return true
 }
 
-func Move(data ConfigInformation) info {
-	var inn info
+func Move(data ConfigInformation) Info {
+	var inn Info
+	inn.Active = false
 	inn.Name = data.Clusters[0].Name
 	inn.User = data.Contexts[0].Context.User
 	inn.port = data.Clusters[0].Cluster.Server[strings.LastIndex(data.Clusters[0].Cluster.Server, ":")+1:]
@@ -107,6 +115,7 @@ func Move(data ConfigInformation) info {
 	inn.nodes = 0
 	inn.pods = 0
 	inn.status = "[yellow]Getting info from cluster....[::-]"
+	inn.test = ""
 	return inn
 }
 
@@ -169,9 +178,15 @@ func GetInfo() {
 				log.Fatal(err)
 			}
 			nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
 			numNodes := len(nodes.Items)
 			infos[i].nodes = numNodes
 			pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
 			infos[i].pods = len(pods.Items)
 		} else {
 			infos[i].status = "[red]Offline[::-]"
@@ -201,10 +216,16 @@ func confirm(name string) {
 	var dest = path + "/config"
 	bytesRead, err := os.ReadFile(source)
 	if err != nil {
-
+		log.Fatal(err)
 	}
-	os.Remove(dest)
-	os.WriteFile(dest, bytesRead, 0644)
+	err = os.Remove(dest)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.WriteFile(dest, bytesRead, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func refreshConfigs() {
