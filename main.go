@@ -20,6 +20,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	Reset = "\033[0m"
+	Green = "\033[32m"
+	Red   = "\033[31m"
+)
+
 var configs = []string{}
 var path = kubepath()
 var config []ConfigInformation
@@ -89,7 +95,7 @@ func InfoDataDisplay(data info) string {
 
 func Testconnection(ip string, port string) bool {
 	address := net.JoinHostPort(ip, port)
-	conn, err := net.DialTimeout("tcp", address, 500*time.Millisecond)
+	conn, err := net.DialTimeout("tcp", address, 2000*time.Millisecond)
 	if err != nil {
 		//log.Fatal(err)
 		return false
@@ -101,14 +107,14 @@ func Testconnection(ip string, port string) bool {
 func Move(data ConfigInformation) info {
 	var inn info
 	inn.Name = data.Clusters[0].Name
-	inn.User = data.Clusters[0].Cluster.Server
+	inn.User = data.Contexts[0].Context.User
 	inn.port = data.Clusters[0].Cluster.Server[strings.LastIndex(data.Clusters[0].Cluster.Server, ":")+1:]
 	inn.ip = data.Clusters[0].Cluster.Server[strings.Index(data.Clusters[0].Cluster.Server, "/")+2 : strings.LastIndex(data.Clusters[0].Cluster.Server, ":")]
 	inn.ping = false
-	inn.path = data.Clusters[0].Cluster.Server
+	inn.path = ""
 	inn.nodes = 0
 	inn.pods = 0
-	inn.status = "Getting info from cluster...."
+	inn.status = "[yellow]Getting info from cluster....[::-]"
 	return inn
 }
 
@@ -148,7 +154,7 @@ func loadConfigs() {
 		infos = append(infos, Move(newconfig))
 		infos[i].path = path + "/configs/" + entry.Name()
 		if is_current(file) {
-			configs = append(configs, config[i].Clusters[0].Name+" - "+"ACTIVE")
+			configs = append(configs, config[i].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
 		} else {
 			configs = append(configs, config[i].Clusters[0].Name)
 		}
@@ -176,11 +182,13 @@ func GetInfo() {
 			pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 			infos[i].pods = len(pods.Items)
 		} else {
-			infos[i].status = "Offline"
+			infos[i].status = "[red]Offline[::-]"
 		}
 	}
 	app.QueueUpdateDraw(func() {
+		cu := configList.GetCurrentItem()
 		refreshConfigs()
+		configList.SetCurrentItem(cu)
 	})
 
 }
@@ -229,7 +237,7 @@ func main() {
 	go GetInfo()
 
 	configList.SetBorder(true).SetTitle("Configuration")
-
+	infoData.SetDynamicColors(true)
 	configList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
 		infoData.SetText(InfoDataDisplay(infos[index]))
 	})
