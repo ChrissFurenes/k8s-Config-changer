@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -97,7 +96,6 @@ func Testconnection(ip string, port string) bool {
 	address := net.JoinHostPort(ip, port)
 	conn, err := net.DialTimeout("tcp", address, 2000*time.Millisecond)
 	if err != nil {
-		//log.Fatal(err)
 		return false
 	}
 	defer conn.Close()
@@ -205,7 +203,6 @@ func is_current(file []byte) bool {
 }
 
 func confirm(name string) {
-	fmt.Println("name: " + name)
 	var source = name
 	var dest = path + "/config"
 	bytesRead, err := os.ReadFile(source)
