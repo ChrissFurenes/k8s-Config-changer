@@ -157,7 +157,7 @@ func loadConfigs() {
 		config = append(config, newconfig)
 		infos = append(infos, Move(newconfig))
 		infos[num].path = path + "/configs/" + entry.Name()
-		if is_current(file) {
+		if IsCurrent(file) {
 			configs = append(configs, config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
 			infos[num].Active = true
 		} else {
@@ -205,7 +205,7 @@ func GetInfo() {
 
 }
 
-func is_current(file []byte) bool {
+func IsCurrent(file []byte) bool {
 	current, err := os.ReadFile(path + "/config")
 	if err != nil {
 		log.Fatal(err)
