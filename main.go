@@ -155,7 +155,7 @@ func loadConfigs() {
 		infos = append(infos, Move(newconfig))
 		infos[i].path = path + "/configs/" + entry.Name()
 		if is_current(file) {
-			configs = append(configs, config[i].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
+			configs = append(configs, config[i].Clusters[0].Name+" - "+"[green]ACTIVE[::-]jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj")
 			infos[i].Active = true
 		} else {
 			configs = append(configs, config[i].Clusters[0].Name)
@@ -255,7 +255,7 @@ func main() {
 		infoData.SetText(InfoDataDisplay(infos[index]))
 	})
 
-	infoData.SetBorder(true).SetTitle("Info").SetTitleAlign(tview.AlignLeft)
+	infoData.SetBorder(true).SetTitle("Info").SetTitleAlign(tview.AlignCenter)
 
 	refreshConfigs()
 	if err := app.SetRoot(flex, true).Run(); err != nil {
