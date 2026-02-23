@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var configs = []string{}
+var configs []string
 var path = kubepath()
 var config []ConfigInformation
 var infos []Info
