@@ -206,7 +206,7 @@ func GetInfo() {
 }
 
 func IsCurrent(file []byte) bool {
-	current, err := os.ReadFile(path + "/config")
+	current, err := os.ReadFile(filepath.FromSlash(path + "/config"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -217,8 +217,8 @@ func IsCurrent(file []byte) bool {
 }
 
 func confirm(name string) {
-	var source = name
-	var dest = path + "/config"
+	var source = filepath.FromSlash(name)
+	var dest = filepath.FromSlash(path + "/config")
 	bytesRead, err := os.ReadFile(source)
 	if err != nil {
 		log.Fatal(err)
@@ -254,6 +254,11 @@ func ConfigPathExists() {
 		if erro != nil {
 			log.Fatal(erro)
 		}
+		bytesRead, err := os.ReadFile(filepath.FromSlash(path + "/config"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = os.WriteFile(filepath.FromSlash(path+"/configs/config"), bytesRead, 0644)
 	}
 }
 func main() {
