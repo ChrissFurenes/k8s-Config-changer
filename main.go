@@ -243,9 +243,18 @@ func refreshConfigs() {
 	}
 
 }
-
+func ConfigPathExists() {
+	_, err := os.Stat(filepath.FromSlash(path + "/configs"))
+	if err != nil {
+		erro := os.MkdirAll(filepath.FromSlash(path+"/configs"), 0755)
+		if erro != nil {
+			log.Fatal(erro)
+		}
+	}
+}
 func main() {
 
+	ConfigPathExists()
 	loadConfigs()
 	go GetInfo()
 
