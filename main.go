@@ -259,6 +259,9 @@ func ConfigPathExists() {
 			log.Fatal(err)
 		}
 		err = os.WriteFile(filepath.FromSlash(path+"/configs/config"), bytesRead, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 func main() {
