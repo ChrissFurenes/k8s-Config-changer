@@ -69,21 +69,21 @@ func InfoDataDisplay(data Info) string {
 		statusIcon = "🟢"
 		color = "[green]"
 	}
-	var information = "Name: " + data.Name +
+	var information = "Name:.. " + data.Name +
 		"\n\nUser:.. " + data.User +
 		"\nIP:.... " + data.ip +
 		"\nPort:.. " + data.port +
 		"\nPing:.. " + color + strings.ToUpper(strconv.FormatBool(data.ping)) + "[::-] [white]" + statusIcon +
-		"\nPath... " + data.path[strings.LastIndex(data.path, "/")+1:]
+		"\nPath:.. " + data.path[strings.LastIndex(data.path, "/")+1:]
 	if data.ping {
-		information = information + "\nNodes.. " + strconv.Itoa(data.nodes) +
-			"\nPods... " + strconv.Itoa(data.pods)
+		information = information + "\nNodes:. " + strconv.Itoa(data.nodes) +
+			"\nPods:.. " + strconv.Itoa(data.pods)
 	}
 	if data.status != "" {
 		information = information + "\n\nStatus: " + data.status
 	}
 	if len(data.test) > 0 {
-		information = information + "\n\n\nTests.. " + data.test
+		information = information + "\n\n\nTests:. " + data.test
 	}
 	return information
 }
