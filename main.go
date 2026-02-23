@@ -139,8 +139,11 @@ func loadConfigs() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for i, entry := range entries {
-
+	var num = 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
 		file, err := os.ReadFile(path + "/configs/" + entry.Name())
 		if err != nil {
 			log.Fatal(err)
@@ -153,13 +156,14 @@ func loadConfigs() {
 		}
 		config = append(config, newconfig)
 		infos = append(infos, Move(newconfig))
-		infos[i].path = path + "/configs/" + entry.Name()
+		infos[num].path = path + "/configs/" + entry.Name()
 		if is_current(file) {
-			configs = append(configs, config[i].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
-			infos[i].Active = true
+			configs = append(configs, config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
+			infos[num].Active = true
 		} else {
-			configs = append(configs, config[i].Clusters[0].Name)
+			configs = append(configs, config[num].Clusters[0].Name)
 		}
+		num++
 
 	}
 }
