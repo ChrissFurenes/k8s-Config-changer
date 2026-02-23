@@ -155,7 +155,7 @@ func loadConfigs() {
 		infos = append(infos, Move(newconfig))
 		infos[i].path = path + "/configs/" + entry.Name()
 		if is_current(file) {
-			configs = append(configs, config[i].Clusters[0].Name+" - "+"[green]ACTIVE[::-]jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj")
+			configs = append(configs, config[i].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
 			infos[i].Active = true
 		} else {
 			configs = append(configs, config[i].Clusters[0].Name)
