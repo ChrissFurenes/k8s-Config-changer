@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	//"github.com/ChrissFurenes/k8s-Config-changer/cmd"
+
 	"github.com/rivo/tview"
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,7 +99,6 @@ func Testconnection(ip string, port string) bool {
 	defer func(conn net.Conn) {
 		err := conn.Close()
 		if err != nil {
-
 		}
 	}(conn)
 	return true
