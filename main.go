@@ -246,10 +246,14 @@ func refreshConfigs() {
 			})
 		}
 	}
-
 }
+
 func ConfigPathExists() {
-	_, err := os.Stat(filepath.FromSlash(path + "/configs"))
+	_, err := os.Stat(filepath.FromSlash(path))
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = os.Stat(filepath.FromSlash(path + "/configs"))
 	if err != nil {
 		erro := os.MkdirAll(filepath.FromSlash(path+"/configs"), 0755)
 		if erro != nil {
