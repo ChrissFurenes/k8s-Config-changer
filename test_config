@@ -1,0 +1,19 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: [SOME LONG STRING]
+    server: https://127.0.0.1:6443
+  name: test01cluster
+contexts:
+- context:
+    cluster: test01cluster
+    namespace: default
+    user: admin
+  name: admin
+current-context: admin
+kind: Config
+users:
+- name: admin
+  user:
+    client-certificate-data: [SOME LONG STRING]
+    client-key-data: [SOME LONG STRING]
