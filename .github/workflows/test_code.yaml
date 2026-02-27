@@ -1,0 +1,62 @@
+name: Test Code
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up GO
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.26.0
+
+      - name: Install dependencies
+        run: go get ./...
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+
+  test_mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up GO
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.26.0
+
+      - name: Install dependencies
+        run: go get ./...
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+  test_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up GO
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.26.0
+
+      - name: Install dependencies
+        run: go get .\...
+
+      - name: Build
+        run: go build -v .\...
+
+      - name: Test
+        run: go test -v .\...
