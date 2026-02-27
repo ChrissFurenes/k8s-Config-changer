@@ -10,6 +10,7 @@ func TestKubePath(t *testing.T) {
 	if err != nil {
 		t.Errorf("kubepath does not exist")
 	}
+	ConfigPathExists()
 }
 
 //func TestConfig(t *testing.T) {
