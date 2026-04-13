@@ -53,10 +53,10 @@ Your Kubernetes configuration directory should be structured as follows:
 ~/.kube/
 ├── config           # Active kubeconfig (used by kubectl)
 └── configs/         # Stored kubeconfig files
-    ├── config.dev
-    ├── config.prod
-    ├── config.test
-    └── config.cluster-x
+    ├── config1.yaml
+    ├── config2.yaml
+    ├── config3.yaml
+    └── config4.yaml
 
 ````
 
