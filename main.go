@@ -14,6 +14,7 @@ import (
 
 	//"github.com/ChrissFurenes/k8s-Config-changer/cmd"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,8 +27,19 @@ var path = kubepath()
 var config []ConfigInformation
 var infos []Info
 var app = tview.NewApplication()
-var configList = tview.NewList()
+var configList = tview.NewList().ShowSecondaryText(false)
 var infoData = tview.NewTextView()
+
+// var commandList = tview.NewTextView().SetText("[F5] Refresh | [F10] Settings | [F2] Open").SetTextAlign(tview.AlignCenter)
+var commandList = tview.NewTextView().SetText("[F5] Refresh").SetTextAlign(tview.AlignCenter)
+
+var grid = tview.NewGrid().
+	SetRows(-1, 25).
+	SetColumns(-1, -1).
+	SetBorders(false).
+	AddItem(configList, 0, 0, 5, 1, 0, 0, true).
+	AddItem(infoData, 0, 1, 5, 1, 0, 0, false).
+	AddItem(commandList, 5, 0, 1, 2, 1, 0, false)
 
 var flex = tview.NewFlex().
 	AddItem(configList, 0, 1, true).
@@ -45,6 +57,7 @@ type Info struct {
 	pods   int
 	status string
 	test   string
+	folder bool
 }
 
 type ConfigInformation struct {
@@ -117,6 +130,7 @@ func Move(data ConfigInformation) Info {
 	inn.pods = 0
 	inn.status = "[yellow]Getting info from cluster....[::-]"
 	inn.test = ""
+	inn.folder = false
 	return inn
 }
 
@@ -142,7 +156,13 @@ func loadConfigs() {
 	}
 	var num = 0
 	for _, entry := range entries {
+		var newconfig ConfigInformation
 		if entry.IsDir() {
+			//			configs = append(configs, "📁 "+entry.Name())
+			//			var newFolder Info
+			//			newFolder.folder = true
+			//			infos = append(infos, newFolder)
+			//			num++
 			continue
 		}
 		file, err := os.ReadFile(path + "/configs/" + entry.Name())
@@ -150,7 +170,6 @@ func loadConfigs() {
 			log.Fatal(err)
 		}
 
-		var newconfig ConfigInformation
 		err = yaml.Unmarshal(file, &newconfig)
 		if err != nil {
 			log.Fatal(err)
@@ -159,10 +178,10 @@ func loadConfigs() {
 		infos = append(infos, Move(newconfig))
 		infos[num].path = path + "/configs/" + entry.Name()
 		if IsCurrent(file) {
-			configs = append(configs, config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
+			configs = append(configs, "☸  "+config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
 			infos[num].Active = true
 		} else {
-			configs = append(configs, config[num].Clusters[0].Name)
+			configs = append(configs, "☸  "+config[num].Clusters[0].Name)
 		}
 		num++
 
@@ -172,30 +191,32 @@ func loadConfigs() {
 func GetInfo() {
 
 	for i, _ := range infos {
-		infos[i].ping = Testconnection(infos[i].ip, infos[i].port)
-		if infos[i].ping {
-			infos[i].status = ""
-			kubeconfig, err := clientcmd.BuildConfigFromFlags("", infos[i].path)
-			if err != nil {
-				log.Fatal(err)
+		if !(infos[i].folder) {
+			infos[i].ping = Testconnection(infos[i].ip, infos[i].port)
+			if infos[i].ping {
+				infos[i].status = ""
+				kubeconfig, err := clientcmd.BuildConfigFromFlags("", infos[i].path)
+				if err != nil {
+					log.Fatal(err)
+				}
+				clientset, err := kubernetes.NewForConfig(kubeconfig)
+				if err != nil {
+					log.Fatal(err)
+				}
+				nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				numNodes := len(nodes.Items)
+				infos[i].nodes = numNodes
+				pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				infos[i].pods = len(pods.Items)
+			} else {
+				infos[i].status = "[red]Offline[::-]"
 			}
-			clientset, err := kubernetes.NewForConfig(kubeconfig)
-			if err != nil {
-				log.Fatal(err)
-			}
-			nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				log.Fatal(err)
-			}
-			numNodes := len(nodes.Items)
-			infos[i].nodes = numNodes
-			pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				log.Fatal(err)
-			}
-			infos[i].pods = len(pods.Items)
-		} else {
-			infos[i].status = "[red]Offline[::-]"
 		}
 	}
 	app.QueueUpdateDraw(func() {
@@ -204,6 +225,18 @@ func GetInfo() {
 		configList.SetCurrentItem(cu)
 	})
 
+}
+func ReadFolerInfo(folderPath string) string {
+	files, err := os.ReadDir(filepath.FromSlash(path + "/configs" + folderPath))
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+	}
+	return "This is a folder"
 }
 
 func IsCurrent(file []byte) bool {
@@ -235,6 +268,7 @@ func confirm(name string) {
 }
 
 func refreshConfigs() {
+	var pos = configList.GetCurrentItem()
 	configList.Clear()
 	if len(configs) == 0 {
 
@@ -246,6 +280,7 @@ func refreshConfigs() {
 			})
 		}
 	}
+	configList.SetCurrentItem(pos)
 }
 
 func ConfigPathExists() {
@@ -284,7 +319,18 @@ func main() {
 	infoData.SetBorder(true).SetTitle("Info").SetTitleAlign(tview.AlignCenter)
 
 	refreshConfigs()
-	if err := app.SetRoot(flex, true).Run(); err != nil {
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyF5 {
+			for i := range infos {
+				infos[i].status = "[yellow]Getting info from cluster....[::-]"
+			}
+			go GetInfo()
+			refreshConfigs()
+
+		}
+		return event
+	})
+	if err := app.SetRoot(grid, true).Run(); err != nil {
 		panic(err)
 	}
 }
