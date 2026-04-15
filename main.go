@@ -188,7 +188,7 @@ func loadConfigs() {
 			newFolder.status = "heiii"
 			newFolder.path = entry.Name()
 			infos = append(infos, newFolder)
-			config = append(config, nil)
+			config = append(config, ConfigInformation{})
 			num++
 			continue
 		}
@@ -232,7 +232,6 @@ func GetInfo(ctx context.Context) {
 	for i := range infos {
 		select {
 		case <-ctx.Done():
-			//log.Println("GetInfo stoppet")
 			return
 		default:
 		}
@@ -299,7 +298,7 @@ func ReadFolerInfo(folderPath string) string {
 			continue
 		}
 	}
-	return "This is " + folderPath
+	return "This is " + filepath.FromSlash(folderPath)
 }
 
 func IsCurrent(file []byte) bool {
@@ -338,31 +337,23 @@ func refreshConfigs() {
 	} else {
 		for i, configf := range configs {
 			configList.AddItem(configf, "", 0, func() {
+				cancel()
 				if !infos[i].folder {
 					app.Stop()
 					confirm(filepath.FromSlash(infos[i].path))
 				} else if infos[i].folder && !infos[i].isBack {
 					newfolderPath = filepath.FromSlash(newfolderPath + infos[i].path + "/")
 					prevFolder = infos[i].path
-					configs = nil
-					infos = nil
-					config = nil
-					cancel()
-					loadConfigs()
-					go GetInfo(ctx)
-					refreshConfigs()
-					configList.SetCurrentItem(0)
 				} else if infos[i].isBack {
 					newfolderPath = newfolderPath[0 : strings.LastIndex(newfolderPath[0:len(newfolderPath)-1], filepath.FromSlash("/"))+1]
-					configs = nil
-					infos = nil
-					config = nil
-					cancel()
-					loadConfigs()
-					go GetInfo(ctx)
-					refreshConfigs()
-					configList.SetCurrentItem(0)
 				}
+				configs = nil
+				infos = nil
+				config = nil
+				loadConfigs()
+				go GetInfo(ctx)
+				refreshConfigs()
+				configList.SetCurrentItem(0)
 			})
 		}
 	}
