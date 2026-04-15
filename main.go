@@ -22,8 +22,13 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var ctx = context.Background()
+var cancel context.CancelFunc
+
 var configs []string
 var path = kubepath()
+var newfolderPath = "/"
+var prevFolder = ""
 var config []ConfigInformation
 var infos []Info
 var app = tview.NewApplication()
@@ -46,18 +51,21 @@ var flex = tview.NewFlex().
 	AddItem(infoData, 0, 1, false)
 
 type Info struct {
-	Active bool
-	Name   string
-	User   string
-	port   string
-	ip     string
-	ping   bool
-	path   string
-	nodes  int
-	pods   int
-	status string
-	test   string
-	folder bool
+	Active        bool
+	Name          string
+	User          string
+	port          string
+	ip            string
+	ping          bool
+	path          string
+	nodes         int
+	pods          int
+	status        string
+	test          string
+	folder        bool
+	filesInFolder int
+	prevFolder    string
+	isBack        bool
 }
 
 type ConfigInformation struct {
@@ -78,27 +86,34 @@ type ConfigInformation struct {
 }
 
 func InfoDataDisplay(data Info) string {
-	var statusIcon = "🔴"
-	var color = "[red]"
-	if data.ping {
-		statusIcon = "🟢"
-		color = "[green]"
-	}
-	var information = "Name:.. " + data.Name +
-		"\n\nUser:.. " + data.User +
-		"\nIP:.... " + data.ip +
-		"\nPort:.. " + data.port +
-		"\nPing:.. " + color + strings.ToUpper(strconv.FormatBool(data.ping)) + "[::-] [white]" + statusIcon +
-		"\nPath:.. " + data.path[strings.LastIndex(data.path, "/")+1:]
-	if data.ping {
-		information = information + "\nNodes:. " + strconv.Itoa(data.nodes) +
-			"\nPods:.. " + strconv.Itoa(data.pods)
-	}
-	if data.status != "" {
-		information = information + "\n\nStatus: " + data.status
-	}
-	if len(data.test) > 0 {
-		information = information + "\n\n\nTests:. " + data.test
+	var information = ""
+	if !data.folder {
+		var statusIcon = "🔴"
+		var color = "[red]"
+		if data.ping {
+			statusIcon = "🟢"
+			color = "[green]"
+		}
+		information = "Name:.. " + data.Name +
+			"\n\nUser:.. " + data.User +
+			"\nIP:.... " + data.ip +
+			"\nPort:.. " + data.port +
+			"\nPing:.. " + color + strings.ToUpper(strconv.FormatBool(data.ping)) + "[::-] [white]" + statusIcon +
+			"\nPath:.. " + data.path[strings.LastIndex(data.path, "/")+1:]
+		if data.ping {
+			information = information + "\nNodes:. " + strconv.Itoa(data.nodes) +
+				"\nPods:.. " + strconv.Itoa(data.pods)
+		}
+		if data.status != "" {
+			information = information + "\n\nStatus: " + data.status
+		}
+		if len(data.test) > 0 {
+			information = information + "\n\n\nTests:. " + data.test
+		}
+		return information
+
+	} else {
+		information = ReadFolerInfo(path + "/configs" + newfolderPath + data.path)
 	}
 	return information
 }
@@ -150,22 +165,34 @@ func kubepath() string {
 }
 
 func loadConfigs() {
-	entries, err := os.ReadDir(path + "/configs")
+	entries, err := os.ReadDir(path + "/configs" + newfolderPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var num = 0
+	if len(newfolderPath) > 1 {
+		var backInfo Info
+		backInfo.isBack = true
+		backInfo.prevFolder = newfolderPath[strings.LastIndex(newfolderPath[0:len(newfolderPath)-1], filepath.FromSlash("/"))+1 : len(newfolderPath)-1]
+		backInfo.folder = true
+		configs = append(configs, " << Back")
+		infos = append(infos, backInfo)
+		num++
+	}
 	for _, entry := range entries {
 		var newconfig ConfigInformation
 		if entry.IsDir() {
-			//			configs = append(configs, "📁 "+entry.Name())
-			//			var newFolder Info
-			//			newFolder.folder = true
-			//			infos = append(infos, newFolder)
-			//			num++
+			configs = append(configs, "📁 "+entry.Name())
+			var newFolder Info
+			newFolder.folder = true
+			newFolder.status = "heiii"
+			newFolder.path = entry.Name()
+			infos = append(infos, newFolder)
+			config = append(config, nil)
+			num++
 			continue
 		}
-		file, err := os.ReadFile(path + "/configs/" + entry.Name())
+		file, err := os.ReadFile(path + "/configs" + newfolderPath + entry.Name())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -176,58 +203,94 @@ func loadConfigs() {
 		}
 		config = append(config, newconfig)
 		infos = append(infos, Move(newconfig))
-		infos[num].path = path + "/configs/" + entry.Name()
-		if IsCurrent(file) {
-			configs = append(configs, "☸  "+config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
-			infos[num].Active = true
-		} else {
-			configs = append(configs, "☸  "+config[num].Clusters[0].Name)
-		}
-		num++
-
-	}
-}
-
-func GetInfo() {
-
-	for i, _ := range infos {
-		if !(infos[i].folder) {
-			infos[i].ping = Testconnection(infos[i].ip, infos[i].port)
-			if infos[i].ping {
-				infos[i].status = ""
-				kubeconfig, err := clientcmd.BuildConfigFromFlags("", infos[i].path)
-				if err != nil {
-					log.Fatal(err)
-				}
-				clientset, err := kubernetes.NewForConfig(kubeconfig)
-				if err != nil {
-					log.Fatal(err)
-				}
-				nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
-				if err != nil {
-					log.Fatal(err)
-				}
-				numNodes := len(nodes.Items)
-				infos[i].nodes = numNodes
-				pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
-				if err != nil {
-					log.Fatal(err)
-				}
-				infos[i].pods = len(pods.Items)
+		infos[num].path = filepath.FromSlash(path + "/configs" + newfolderPath + entry.Name())
+		//if IsCurrent(file) {
+		//	configs = append(configs, "☸  "+config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
+		//	infos[num].Active = true
+		//} else {
+		if !infos[0].isBack {
+			if IsCurrent(file) {
+				configs = append(configs, "☸  "+config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
+				infos[num].Active = true
 			} else {
-				infos[i].status = "[red]Offline[::-]"
+				configs = append(configs, "☸  "+config[num].Clusters[0].Name)
+			}
+		} else {
+			if IsCurrent(file) {
+				configs = append(configs, "☸  "+config[num-1].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
+				infos[num].Active = true
+			} else {
+				configs = append(configs, "☸  "+config[num-1].Clusters[0].Name)
 			}
 		}
+		num++
 	}
+
+}
+
+func GetInfo(ctx context.Context) {
+	for i := range infos {
+		select {
+		case <-ctx.Done():
+			//log.Println("GetInfo stoppet")
+			return
+		default:
+		}
+
+		if infos[i].folder {
+			continue
+		}
+
+		infos[i].ping = Testconnection(infos[i].ip, infos[i].port)
+		if !infos[i].ping {
+			infos[i].status = "[red]Offline[::-]"
+			continue
+		}
+
+		infos[i].status = ""
+
+		kubeconfig, err := clientcmd.BuildConfigFromFlags("", infos[i].path)
+		if err != nil {
+			log.Println("BuildConfigFromFlags:", err)
+			continue
+		}
+
+		clientset, err := kubernetes.NewForConfig(kubeconfig)
+		if err != nil {
+			log.Println("NewForConfig:", err)
+			continue
+		}
+
+		nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			log.Println("Nodes List:", err)
+			continue
+		}
+		infos[i].nodes = len(nodes.Items)
+
+		select {
+		case <-ctx.Done():
+			log.Println("GetInfo stoppet")
+			return
+		default:
+		}
+
+		pods, err := clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
+		if err != nil {
+			log.Println("Pods List:", err)
+			continue
+		}
+		infos[i].pods = len(pods.Items)
+	}
+
 	app.QueueUpdateDraw(func() {
 		cu := configList.GetCurrentItem()
 		refreshConfigs()
 		configList.SetCurrentItem(cu)
 	})
-
 }
 func ReadFolerInfo(folderPath string) string {
-	files, err := os.ReadDir(filepath.FromSlash(path + "/configs" + folderPath))
+	files, err := os.ReadDir(filepath.FromSlash(folderPath))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -236,7 +299,7 @@ func ReadFolerInfo(folderPath string) string {
 			continue
 		}
 	}
-	return "This is a folder"
+	return "This is " + folderPath
 }
 
 func IsCurrent(file []byte) bool {
@@ -273,10 +336,33 @@ func refreshConfigs() {
 	if len(configs) == 0 {
 
 	} else {
-		for i, config := range configs {
-			configList.AddItem(config, "", 0, func() {
-				app.Stop()
-				confirm(filepath.FromSlash(infos[i].path))
+		for i, configf := range configs {
+			configList.AddItem(configf, "", 0, func() {
+				if !infos[i].folder {
+					app.Stop()
+					confirm(filepath.FromSlash(infos[i].path))
+				} else if infos[i].folder && !infos[i].isBack {
+					newfolderPath = filepath.FromSlash(newfolderPath + infos[i].path + "/")
+					prevFolder = infos[i].path
+					configs = nil
+					infos = nil
+					config = nil
+					cancel()
+					loadConfigs()
+					go GetInfo(ctx)
+					refreshConfigs()
+					configList.SetCurrentItem(0)
+				} else if infos[i].isBack {
+					newfolderPath = newfolderPath[0 : strings.LastIndex(newfolderPath[0:len(newfolderPath)-1], filepath.FromSlash("/"))+1]
+					configs = nil
+					infos = nil
+					config = nil
+					cancel()
+					loadConfigs()
+					go GetInfo(ctx)
+					refreshConfigs()
+					configList.SetCurrentItem(0)
+				}
 			})
 		}
 	}
@@ -304,11 +390,12 @@ func ConfigPathExists() {
 		}
 	}
 }
-func main() {
 
+func main() {
+	ctx, cancel = context.WithCancel(context.Background())
 	ConfigPathExists()
 	loadConfigs()
-	go GetInfo()
+	go GetInfo(ctx)
 
 	configList.SetBorder(true).SetTitle("Configuration")
 	infoData.SetDynamicColors(true)
@@ -324,7 +411,8 @@ func main() {
 			for i := range infos {
 				infos[i].status = "[yellow]Getting info from cluster....[::-]"
 			}
-			go GetInfo()
+			cancel()
+			go GetInfo(ctx)
 			refreshConfigs()
 
 		}
