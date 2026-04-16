@@ -13,7 +13,7 @@ This tool is designed for developers, operators, and homelab users who work with
 - 🔁 Quickly switch between multiple kubeconfig files
 - 📁 Centralized storage of kubeconfigs in a single directory
 - ⚡ Simple and fast CLI with no external dependencies
-- 🧩 Works seamlessly with `kubectl`
+- 🧩 Works seamlessly with `kubectl` and ``k9s``
 - 🖥️ Ideal for dev / staging / prod and multi-cluster environments
 
 ---
@@ -44,22 +44,25 @@ Verify installation:
 ```bash
 kcc
 ```
-![img.png](img.png)
-
+Start view             |  In folder
+:-------------------------:|:-------------------------:
+![](img.png) | ![](img_1.png)
 
 ## 📂 Directory Structure
 Your Kubernetes configuration directory should be structured as follows:
 ````
 ~/.kube/
-├── config           # Active kubeconfig (used by kubectl)
+├── config           # Active kubeconfig (used by kubectl or K9S)
 └── configs/         # Stored kubeconfig files
     ├── config1.yaml
     ├── config2.yaml
     ├── config3.yaml
-    └── config4.yaml
+    ├── config4.yaml
+    └── some_folder/
+        └── config5.yaml
 
 ````
 
-- ~/.kube/config is the file used by kubectl
+- ~/.kube/config is the file used by kubectl and k9s
 
-- All files inside configs/ must be valid Kubernetes kubeconfig files
+- All files inside ``configs/`` **must** be valid Kubernetes kubeconfig files
