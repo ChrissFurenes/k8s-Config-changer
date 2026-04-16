@@ -6,9 +6,9 @@ import (
 )
 
 func TestKubePath(t *testing.T) {
-	_, err := os.Stat(kubepath())
+	_, err := os.Stat(kubePath())
 	if err != nil {
-		t.Errorf("kubepath does not exist")
+		t.Errorf("kubePath does not exist")
 	}
 	ConfigPathExists()
 }

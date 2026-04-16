@@ -23,8 +23,10 @@ import (
 )
 
 var configs []string
-var path = kubepath()
-var newfolderPath = "/"
+var path = kubePath()
+var newFolderPath = "/"
+var PrevFolder = []string{"config"}
+
 var config []ConfigInformation
 var infos []Info
 var app = tview.NewApplication()
@@ -41,10 +43,6 @@ var grid = tview.NewGrid().
 	AddItem(configList, 0, 0, 5, 1, 0, 0, true).
 	AddItem(infoData, 0, 1, 5, 1, 0, 0, false).
 	AddItem(commandList, 5, 0, 1, 2, 1, 0, false)
-
-var flex = tview.NewFlex().
-	AddItem(configList, 0, 1, true).
-	AddItem(infoData, 0, 1, false)
 
 type Info struct {
 	Active        bool
@@ -83,7 +81,7 @@ type ConfigInformation struct {
 
 func InfoDataDisplay(data Info) string {
 	var information = ""
-	if !data.folder {
+	if !data.folder && !data.isBack {
 		var statusIcon = "🔴"
 		var color = "[red]"
 		if data.ping {
@@ -108,13 +106,13 @@ func InfoDataDisplay(data Info) string {
 		}
 		return information
 
-	} else {
-		information = ReadFolderInfo(path + "/configs" + newfolderPath + data.path)
 	}
+
+	information = ReadFolderInfo(path + "/configs" + newFolderPath + data.path)
 	return information
 }
 
-func Testconnection(ip string, port string) bool {
+func TestConnection(ip string, port string) bool {
 	address := net.JoinHostPort(ip, port)
 	conn, err := net.DialTimeout("tcp", address, 2000*time.Millisecond)
 	if err != nil {
@@ -156,50 +154,55 @@ func UserHomeDir() string {
 	return filepath.FromSlash(os.Getenv("HOME"))
 }
 
-func kubepath() string {
+func kubePath() string {
+
 	return filepath.Join(UserHomeDir(), ".kube")
 }
 
 func loadConfigs() {
-	entries, err := os.ReadDir(path + "/configs" + newfolderPath)
+	entries, err := os.ReadDir(path + "/configs" + newFolderPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	var num = 0
-	if len(newfolderPath) > 1 {
+	if len(newFolderPath) > 1 {
 		var backInfo Info
 		backInfo.isBack = true
-		backInfo.prevFolder = newfolderPath[strings.LastIndex(newfolderPath[0:len(newfolderPath)-1], filepath.FromSlash("/"))+1 : len(newfolderPath)-1]
-		backInfo.folder = true
-		configs = append(configs, " << Back")
+		backInfo.prevFolder = newFolderPath[strings.LastIndex(newFolderPath[0:len(newFolderPath)-1], filepath.FromSlash("/"))+1 : len(newFolderPath)-1]
+		backInfo.folder = false
+		configs = append(configs, " << Back to folder: "+PrevFolder[len(PrevFolder)-1])
+
 		infos = append(infos, backInfo)
 		num++
 	}
+	if len(entries) == 0 {
+		return
+	}
 	for _, entry := range entries {
-		var newconfig ConfigInformation
+		var newConfig ConfigInformation
 		if entry.IsDir() {
 			configs = append(configs, "📁 "+entry.Name())
 			var newFolder Info
 			newFolder.folder = true
-			newFolder.status = "heiii"
 			newFolder.path = entry.Name()
 			infos = append(infos, newFolder)
 			config = append(config, ConfigInformation{})
 			num++
 			continue
 		}
-		file, err := os.ReadFile(path + "/configs" + newfolderPath + entry.Name())
+		file, err := os.ReadFile(path + "/configs" + newFolderPath + entry.Name())
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = yaml.Unmarshal(file, &newconfig)
+		err = yaml.Unmarshal(file, &newConfig)
 		if err != nil {
 			log.Fatal(err)
 		}
-		config = append(config, newconfig)
-		infos = append(infos, Move(newconfig))
-		infos[num].path = filepath.FromSlash(path + "/configs" + newfolderPath + entry.Name())
+		config = append(config, newConfig)
+		infos = append(infos, Move(newConfig))
+		infos[num].path = filepath.FromSlash(path + "/configs" + newFolderPath + entry.Name())
 
 		if !infos[0].isBack {
 			if IsCurrent(file) {
@@ -223,27 +226,27 @@ func loadConfigs() {
 
 func GetInfo() {
 	var inn = infos
-	var folder = newfolderPath
-	for i, _ := range inn {
-		if !(inn[i].folder) {
-			inn[i].ping = Testconnection(inn[i].ip, inn[i].port)
+	var folder = newFolderPath
+	for i := range inn {
+		if !(inn[i].folder || inn[i].isBack) {
+			inn[i].ping = TestConnection(inn[i].ip, inn[i].port)
 			if inn[i].ping {
 				inn[i].status = ""
 				kubeconfig, err := clientcmd.BuildConfigFromFlags("", inn[i].path)
 				if err != nil {
 					log.Fatal(err)
 				}
-				clientset, err := kubernetes.NewForConfig(kubeconfig)
+				clientSet, err := kubernetes.NewForConfig(kubeconfig)
 				if err != nil {
 					log.Fatal(err)
 				}
-				nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+				nodes, err := clientSet.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 				if err != nil {
 					log.Fatal(err)
 				}
 				numNodes := len(nodes.Items)
 				inn[i].nodes = numNodes
-				pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+				pods, err := clientSet.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -252,7 +255,7 @@ func GetInfo() {
 				inn[i].status = "[red]Offline[::-]"
 			}
 		}
-		if folder == newfolderPath {
+		if folder == newFolderPath {
 			infos = inn
 			app.QueueUpdateDraw(func() {
 				cu := configList.GetCurrentItem()
@@ -311,19 +314,28 @@ func refreshConfigs() {
 	configList.Clear()
 
 	if len(configs) == 0 {
-
+		return
 	} else {
 
-		for i, configf := range configs {
-			configList.AddItem(configf, "", 0, func() {
-				if !infos[i].folder {
+		for i, configEntry := range configs {
+			configList.AddItem(configEntry, "", 0, func() {
+				if !(infos[i].folder || infos[i].isBack) {
 					app.Stop()
 					confirm(filepath.FromSlash(infos[i].path))
 				} else if infos[i].folder && !infos[i].isBack {
-					newfolderPath = filepath.FromSlash(newfolderPath + infos[i].path + "/")
-				} else if infos[i].isBack {
-					newfolderPath = newfolderPath[0 : strings.LastIndex(newfolderPath[0:len(newfolderPath)-1], filepath.FromSlash("/"))+1]
+					newFolderPath = filepath.FromSlash(newFolderPath + infos[i].path + "/")
+					if len(infos[0].prevFolder) != 0 {
+						PrevFolder = append(PrevFolder, infos[0].prevFolder)
+					}
+
+				} else if infos[0].isBack {
+					newFolderPath = newFolderPath[0 : strings.LastIndex(newFolderPath[0:len(newFolderPath)-1], filepath.FromSlash("/"))+1]
+					if len(PrevFolder) > 1 {
+						PrevFolder = PrevFolder[:len(PrevFolder)-1]
+					}
+
 				}
+
 				configs = nil
 				infos = nil
 				config = nil
@@ -333,7 +345,7 @@ func refreshConfigs() {
 				if configList.GetItemCount() > 0 {
 					configList.SetCurrentItem(1)
 				}
-				if !infos[i].isBack {
+				if !infos[0].isBack || (infos[0].isBack && !infos[0].folder) {
 					configList.SetCurrentItem(0)
 				}
 			})
@@ -349,9 +361,9 @@ func ConfigPathExists() {
 	}
 	_, err = os.Stat(filepath.FromSlash(path + "/configs"))
 	if err != nil {
-		erro := os.MkdirAll(filepath.FromSlash(path+"/configs"), 0755)
-		if erro != nil {
-			log.Fatal(erro)
+		errors := os.MkdirAll(filepath.FromSlash(path+"/configs"), 0755)
+		if errors != nil {
+			log.Fatal(errors)
 		}
 		bytesRead, err := os.ReadFile(filepath.FromSlash(path + "/config"))
 		if err != nil {
