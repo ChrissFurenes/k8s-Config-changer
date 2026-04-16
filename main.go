@@ -204,10 +204,7 @@ func loadConfigs() {
 		config = append(config, newconfig)
 		infos = append(infos, Move(newconfig))
 		infos[num].path = filepath.FromSlash(path + "/configs" + newfolderPath + entry.Name())
-		//if IsCurrent(file) {
-		//	configs = append(configs, "☸  "+config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
-		//	infos[num].Active = true
-		//} else {
+
 		if !infos[0].isBack {
 			if IsCurrent(file) {
 				configs = append(configs, "☸  "+config[num].Clusters[0].Name+" - "+"[green]ACTIVE[::-]")
@@ -228,65 +225,49 @@ func loadConfigs() {
 
 }
 
-func GetInfo(ctx context.Context) {
-	for i := range infos {
-		select {
-		case <-ctx.Done():
-			return
-		default:
+func GetInfo() {
+	var inn = infos
+	var folder = newfolderPath
+	for i, _ := range inn {
+		if !(inn[i].folder) {
+			inn[i].ping = Testconnection(inn[i].ip, inn[i].port)
+			if inn[i].ping {
+				inn[i].status = ""
+				kubeconfig, err := clientcmd.BuildConfigFromFlags("", inn[i].path)
+				if err != nil {
+					log.Fatal(err)
+				}
+				clientset, err := kubernetes.NewForConfig(kubeconfig)
+				if err != nil {
+					log.Fatal(err)
+				}
+				nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				numNodes := len(nodes.Items)
+				inn[i].nodes = numNodes
+				pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				inn[i].pods = len(pods.Items)
+			} else {
+				inn[i].status = "[red]Offline[::-]"
+			}
 		}
-
-		if infos[i].folder {
-			continue
+		if folder == newfolderPath {
+			infos = inn
+			app.QueueUpdateDraw(func() {
+				cu := configList.GetCurrentItem()
+				refreshConfigs()
+				configList.SetCurrentItem(cu)
+			})
+		} else {
+			break
 		}
-
-		infos[i].ping = Testconnection(infos[i].ip, infos[i].port)
-		if !infos[i].ping {
-			infos[i].status = "[red]Offline[::-]"
-			continue
-		}
-
-		infos[i].status = ""
-
-		kubeconfig, err := clientcmd.BuildConfigFromFlags("", infos[i].path)
-		if err != nil {
-			log.Println("BuildConfigFromFlags:", err)
-			continue
-		}
-
-		clientset, err := kubernetes.NewForConfig(kubeconfig)
-		if err != nil {
-			log.Println("NewForConfig:", err)
-			continue
-		}
-
-		nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			log.Println("Nodes List:", err)
-			continue
-		}
-		infos[i].nodes = len(nodes.Items)
-
-		select {
-		case <-ctx.Done():
-			log.Println("GetInfo stoppet")
-			return
-		default:
-		}
-
-		pods, err := clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
-		if err != nil {
-			log.Println("Pods List:", err)
-			continue
-		}
-		infos[i].pods = len(pods.Items)
 	}
 
-	app.QueueUpdateDraw(func() {
-		cu := configList.GetCurrentItem()
-		refreshConfigs()
-		configList.SetCurrentItem(cu)
-	})
 }
 func ReadFolerInfo(folderPath string) string {
 	files, err := os.ReadDir(filepath.FromSlash(folderPath))
@@ -332,12 +313,13 @@ func confirm(name string) {
 func refreshConfigs() {
 	var pos = configList.GetCurrentItem()
 	configList.Clear()
+
 	if len(configs) == 0 {
 
 	} else {
+
 		for i, configf := range configs {
 			configList.AddItem(configf, "", 0, func() {
-				cancel()
 				if !infos[i].folder {
 					app.Stop()
 					confirm(filepath.FromSlash(infos[i].path))
@@ -351,9 +333,14 @@ func refreshConfigs() {
 				infos = nil
 				config = nil
 				loadConfigs()
-				go GetInfo(ctx)
+				go GetInfo()
 				refreshConfigs()
-				configList.SetCurrentItem(0)
+				if configList.GetItemCount() > 0 {
+					configList.SetCurrentItem(1)
+				}
+				if !infos[i].isBack {
+					configList.SetCurrentItem(0)
+				}
 			})
 		}
 	}
@@ -386,7 +373,7 @@ func main() {
 	ctx, cancel = context.WithCancel(context.Background())
 	ConfigPathExists()
 	loadConfigs()
-	go GetInfo(ctx)
+	go GetInfo()
 
 	configList.SetBorder(true).SetTitle("Configuration")
 	infoData.SetDynamicColors(true)
@@ -402,10 +389,8 @@ func main() {
 			for i := range infos {
 				infos[i].status = "[yellow]Getting info from cluster....[::-]"
 			}
-			cancel()
-			go GetInfo(ctx)
+			go GetInfo()
 			refreshConfigs()
-
 		}
 		return event
 	})
