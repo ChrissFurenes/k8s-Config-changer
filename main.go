@@ -417,7 +417,7 @@ func main() {
 					configList.SetCurrentItem(0)
 				}
 			}
-		}
+		} //else if (tcell.ModShift != 0 && event.Rune() == ':') // search bar
 		return event
 	})
 	if err := app.SetRoot(grid, true).Run(); err != nil {
