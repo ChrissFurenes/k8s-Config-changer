@@ -109,7 +109,7 @@ func InfoDataDisplay(data Info) string {
 		return information
 
 	} else {
-		information = ReadFolerInfo(path + "/configs" + newfolderPath + data.path)
+		information = ReadFolderInfo(path + "/configs" + newfolderPath + data.path)
 	}
 	return information
 }
@@ -265,7 +265,7 @@ func GetInfo() {
 	}
 
 }
-func ReadFolerInfo(folderPath string) string {
+func ReadFolderInfo(folderPath string) string {
 	files, err := os.ReadDir(filepath.FromSlash(folderPath))
 	if err != nil {
 		log.Fatal(err)
