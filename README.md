@@ -44,9 +44,9 @@ Verify installation:
 ```bash
 kcc
 ```
-Start view             |  In folder
-:-------------------------:|:-------------------------:
-![](img.png) | ![](img_1.png)
+
+![](img.png) 
+![](img_1.png)
 
 ## 📂 Directory Structure
 Your Kubernetes configuration directory should be structured as follows:
