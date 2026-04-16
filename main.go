@@ -342,12 +342,14 @@ func refreshConfigs() {
 				loadConfigs()
 				go GetInfo()
 				refreshConfigs()
-				if configList.GetItemCount() > 0 {
+				if configList.GetItemCount() > 0 && len(newFolderPath) > 1 {
 					configList.SetCurrentItem(1)
-				}
-				if !infos[0].isBack || (infos[0].isBack && !infos[0].folder) {
+				} else {
 					configList.SetCurrentItem(0)
 				}
+				//if !infos[0].isBack || (infos[0].isBack && !infos[0].folder) {
+				//	configList.SetCurrentItem(0)
+				//}
 			})
 		}
 	}
@@ -397,6 +399,24 @@ func main() {
 			}
 			go GetInfo()
 			refreshConfigs()
+		} else if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyEsc {
+			if len(newFolderPath) > 1 {
+				newFolderPath = newFolderPath[0 : strings.LastIndex(newFolderPath[0:len(newFolderPath)-1], filepath.FromSlash("/"))+1]
+				if len(PrevFolder) > 1 {
+					PrevFolder = PrevFolder[:len(PrevFolder)-1]
+				}
+				configs = nil
+				infos = nil
+				config = nil
+				loadConfigs()
+				go GetInfo()
+				refreshConfigs()
+				if configList.GetItemCount() > 0 && len(newFolderPath) > 1 {
+					configList.SetCurrentItem(1)
+				} else {
+					configList.SetCurrentItem(0)
+				}
+			}
 		}
 		return event
 	})
