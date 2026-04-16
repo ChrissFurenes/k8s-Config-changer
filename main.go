@@ -22,13 +22,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var ctx = context.Background()
-var cancel context.CancelFunc
-
 var configs []string
 var path = kubepath()
 var newfolderPath = "/"
-var prevFolder = ""
 var config []ConfigInformation
 var infos []Info
 var app = tview.NewApplication()
@@ -325,7 +321,6 @@ func refreshConfigs() {
 					confirm(filepath.FromSlash(infos[i].path))
 				} else if infos[i].folder && !infos[i].isBack {
 					newfolderPath = filepath.FromSlash(newfolderPath + infos[i].path + "/")
-					prevFolder = infos[i].path
 				} else if infos[i].isBack {
 					newfolderPath = newfolderPath[0 : strings.LastIndex(newfolderPath[0:len(newfolderPath)-1], filepath.FromSlash("/"))+1]
 				}
@@ -370,7 +365,6 @@ func ConfigPathExists() {
 }
 
 func main() {
-	ctx, cancel = context.WithCancel(context.Background())
 	ConfigPathExists()
 	loadConfigs()
 	go GetInfo()
