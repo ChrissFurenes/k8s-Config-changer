@@ -384,6 +384,25 @@ func ConfigPathExists() {
 		}
 	}
 }
+func imports(from string, to string) {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	iPath := (dir + filepath.FromSlash("/"+from))
+	nPath := (kubePath() + filepath.FromSlash("/configs/"+to))
+	println(iPath)
+	println(nPath)
+	os.Exit(0)
+}
+
+func help() {
+	println("KCC usage:")
+	println("version ......... prints version")
+	println("i or import ..... import new config")
+	println("")
+	os.Exit(0)
+}
 
 func main() {
 	for i, arg := range os.Args {
@@ -394,28 +413,17 @@ func main() {
 		case "version":
 			println("Version: 0.7.0beta")
 			os.Exit(0)
+		case "help":
+			help()
+		case "h":
+			help()
 		case "i":
-			dir, err := os.Getwd()
-			if err != nil {
-				log.Fatal(err)
-			}
-			iPath := (dir + filepath.FromSlash("/"+os.Args[i+1]))
-			nPath := (kubePath() + filepath.FromSlash("/configs/"+os.Args[i+2]))
-			println(iPath)
-			println(nPath)
-			os.Exit(0)
+			imports(os.Args[i+1], os.Args[i+2])
 		case "import":
-			dir, err := os.Getwd()
-			if err != nil {
-				log.Fatal(err)
-			}
-			iPath := (dir + filepath.FromSlash("/"+os.Args[i+1]))
-			nPath := (kubePath() + filepath.FromSlash("/configs"+os.Args[i+2]))
-			println(iPath)
-			println(nPath)
-			os.Exit(0)
+			imports(os.Args[i+1], os.Args[i+2])
 		default:
 			println("error")
+			help()
 			os.Exit(0)
 		}
 	}
