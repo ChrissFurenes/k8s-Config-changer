@@ -278,7 +278,7 @@ func ReadFolderInfo(folderPath string) string {
 			continue
 		}
 	}
-	return "This is " + filepath.FromSlash(folderPath)
+	return "Folder path: " + filepath.FromSlash(folderPath)
 }
 
 func IsCurrent(file []byte) bool {
@@ -379,6 +379,39 @@ func ConfigPathExists() {
 }
 
 func main() {
+	for i, arg := range os.Args {
+		if i == 0 {
+			continue
+		}
+		switch arg {
+		case "version":
+			println("Version: 0.7.0beta")
+			os.Exit(0)
+		case "i":
+			dir, err := os.Getwd()
+			if err != nil {
+				log.Fatal(err)
+			}
+			iPath := (dir + filepath.FromSlash("/"+os.Args[i+1]))
+			nPath := (kubePath() + filepath.FromSlash("/configs/"+os.Args[i+2]))
+			println(iPath)
+			println(nPath)
+			os.Exit(0)
+		case "import":
+			dir, err := os.Getwd()
+			if err != nil {
+				log.Fatal(err)
+			}
+			iPath := (dir + filepath.FromSlash("/"+os.Args[i+1]))
+			nPath := (kubePath() + filepath.FromSlash("/configs"+os.Args[i+2]))
+			println(iPath)
+			println(nPath)
+			os.Exit(0)
+		default:
+			println("error")
+			os.Exit(0)
+		}
+	}
 	ConfigPathExists()
 	loadConfigs()
 	go GetInfo()
