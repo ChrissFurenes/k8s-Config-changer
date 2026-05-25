@@ -56,12 +56,12 @@ jobs:
           #macos arm64
           GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 \
             go build -trimpath -ldflags "-s -w -X main.version=$VERSION" \
-            -o "dist/kcc.mac.arm64" .
+            -o "dist/kc.mac.arm64" .
 
           #macos arm64
           GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 \
             go build -trimpath -ldflags "-s -w -X main.version=$VERSION" \
-            -o "dist/kcc.mac.amd64" .
+            -o "dist/kc.mac.amd64" .
 
       - name: Create GitHub Draft-release + upload assets
         uses: softprops/action-gh-release@v2
@@ -75,5 +75,5 @@ jobs:
             dist/kcc.linux.arm64
             dist/kcc.windows.amd64.exe
             dist/kcc.windows.arm64.exe
-            dist/kcc.mac.arm64
-            dist/kcc.mac.amd64
+            dist/kc.mac.arm64
+            dist/kc.mac.amd64
