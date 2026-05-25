@@ -295,18 +295,25 @@ func IsCurrent(file []byte) bool {
 func confirm(name string) {
 	var source = filepath.FromSlash(name)
 	var dest = filepath.FromSlash(path + "/config")
-	bytesRead, err := os.ReadFile(source)
+	err := os.Remove(dest)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.Remove(dest)
+	err = os.Link(source, dest)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.WriteFile(dest, bytesRead, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	//	bytesRead, err := os.ReadFile(source)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+
+	//	err = os.WriteFile(dest, bytesRead, 0644)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+
 }
 
 func refreshConfigs() {
